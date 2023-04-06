@@ -78,8 +78,11 @@ async def cn_today_analysis(code: str = None):
         col.replace("CDL_", "").lower() for col in df_ta.columns if col != "date"
     ]
     df_ta.columns = new_columns
-    print(df_ta)
-    return {"length": len(df_ta), "data": json.loads(df_ta.to_json(orient="records"))}
+    merged_df = pd.merge(df, df_ta, on="date", how="left")
+    return {
+        "length": len(merged_df),
+        "data": json.loads(merged_df.to_json(orient="records")),
+    }
 
 
 @router.get("/data")
