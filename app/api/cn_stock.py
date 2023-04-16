@@ -38,7 +38,7 @@ async def cn_history_data(
 
 
 @router.get("/today/analysis")
-async def cn_today_analysis():
+async def cn_today_analysis(code: str = None):
     today = datetime.date.today()
     weekday = today.weekday()
     if weekday >= 5:  # 如果是周六或周日
@@ -47,15 +47,42 @@ async def cn_today_analysis():
     two_weeks_ago = today - datetime.timedelta(weeks=4)
     start_date = two_weeks_ago.strftime("%Y-%m-%d")
     end_date = today.strftime("%Y-%m-%d")
-    sql = "SELECT * FROM cn_stock_data WHERE DATE BETWEEN '{0}' AND '{1}'".format(
-        start_date, end_date
-    )
+    if code:
+        sql = "SELECT * FROM cn_stock_data WHERE symbol = '{}'".format(code)
+    else:
+        sql = "SELECT * FROM cn_stock_data WHERE DATE BETWEEN '{0}' AND '{1}'".format(
+            start_date, end_date
+        )
     df = pd.read_sql(sql, db.pool.connection())
-    df_ta = ta.cdl_pattern(df["open"], df["high"], df["low"], df["close"], "hammer")
-    df["CDL_HAMMER"] = df_ta["CDL_HAMMER"]
-    df = df.loc[(df["CDL_HAMMER"] == 100) & (df["date"] == "2023-04-04")]
-    print(df.to_json(orient="records"))
-    return {"length": len(df), "data": json.loads(df.to_json(orient="records"))}
+    df_ta = ta.cdl_pattern(
+        df["open"],
+        df["high"],
+        df["low"],
+        df["close"],
+        [
+            "darkcloudcover",
+            "dojistar",
+            "engulfing",
+            "hangingman",
+            "hammer",
+            "belthold",
+            "3starsinsouth",
+        ],
+    )
+    df_ta["date"] = df["date"]
+    df_ta = df_ta.loc[(df_ta.iloc[:, :-1] != 0.0).any(axis=1)]
+    cols = list(df_ta.columns)
+    cols.remove("date")
+    df_ta = df_ta[["date"] + cols]
+    new_columns = ["date"] + [
+        col.replace("CDL_", "").lower() for col in df_ta.columns if col != "date"
+    ]
+    df_ta.columns = new_columns
+    merged_df = pd.merge(df, df_ta, on="date", how="left")
+    return {
+        "length": len(merged_df),
+        "data": json.loads(merged_df.to_json(orient="records")),
+    }
 
 
 @router.get("/data")
