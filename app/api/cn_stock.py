@@ -16,11 +16,39 @@ router = APIRouter(prefix="/cn")
 
 @router.get("/all/symbol")
 async def cn_all_symbol():
-    query_sql = "select symbol from cn_stock_data group by symbol"
-    result = db.query(query_sql)
-    insert_sql = "insert into cn_stock_info(symbol) values (%s)"
-    db.batchInsert(insert_sql, result)
+    sql = "replace into cn_stock_info(symbol,name,description) values(%s,%s,%s)"
+    exist_sql = "select * from cn_stock_info where symbol= '{0}'"
+    today_data_df = ak.stock_zh_a_spot_em()
+    for index, row in today_data_df[["代码", "名称", "总市值"]].iterrows():
+        code = row["代码"]
+        name = row["名称"]
+        market_value = row["总市值"]
+        result = db.query(exist_sql.format(code))
+        if result[0][2] is None:
+            try:
+                scope_df = ak.stock_zyjs_ths(symbol=code)
+                scope = scope_df["经营范围"].iloc[-1]
+                # result.append()
+                db.insert(sql, (code, name, scope))
+            except Exception as e:
+                db.insert(sql, (code, name, ""))
+                print("异常:", code)
+                print(e)
+        db.insert(
+            "update cn_stock_info set market_value = %s where symbol = %s ",
+            (str(market_value), code),
+        )
+
     return {"message": "ok"}
+
+
+# @router.get("/symbol/busi/scope")
+# async def symbol_busi_scope():
+#     sql = "select * from cn_stock_info"
+#     result = db.query(sql)
+#     for symbol in result:
+#         stock_zyjs_ths_df = ak.stock_zyjs_ths(symbol=symbol[0])
+#         print(stock_zyjs_ths_df)
 
 
 @router.get("/history/data")
