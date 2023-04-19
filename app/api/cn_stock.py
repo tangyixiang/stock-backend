@@ -7,6 +7,9 @@ import pandas as pd
 import pandas_ta as ta
 import json
 from app.utils.cn_stock_utils import save_symbol_his_data
+import warnings
+
+warnings.filterwarnings("ignore")
 
 router = APIRouter(prefix="/cn")
 
@@ -92,3 +95,43 @@ async def cn_symbol_data_daily(symbol: str, start_date: str, end_date: str):
     )
     df = pd.read_sql_query(sql, db.pool.connection())
     return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/stock/boll")
+async def bbands():
+    """
+    布林区间
+    """
+    all_symbol_sql = "select symbol from cn_stock_info"
+    max_date_sql = "select max(date) from cn_stock_data"
+    max_date = db.query_single_col(max_date_sql)[0]
+
+    cache_data_sql = "select value from cn_stock_indicators where date = '{0}' and name = 'boll' ".format(
+        max_date
+    )
+    cache_data = db.query_single_col(cache_data_sql)
+    if cache_data:
+        return json.loads(cache_data[0])
+
+    result = db.query(all_symbol_sql)
+    boll_mid_list = []
+    boll_top_list = []
+    for symbol in result:
+        sql = "select * from cn_stock_data where symbol = '{0}' order by date desc limit 300".format(
+            symbol[0]
+        )
+        df = pd.read_sql_query(sql, db.pool.connection())
+        pd.to_datetime(df["date"])
+        df = df.sort_values("date")
+        boll = ta.bbands(df["close"])
+        df = pd.concat([df, boll], axis=1)
+        # 最后一天在布林中线
+        if df["BBP_5_2.0"].iloc[-1] > 0.4 and df["BBP_5_2.0"].iloc[-1] < 0.6:
+            boll_mid_list.append(df["symbol"].iloc[-1])
+        # 最后一天在布林线上方
+        if df["close"].iloc[-1] > df["BBU_5_2.0"].iloc[-1]:
+            boll_top_list.append(df["symbol"].iloc[-1])
+    boll_data = {"mid": boll_mid_list, "top": boll_top_list}
+    cache_sql = "insert into cn_stock_indicators values(%s,%s,%s)"
+    db.insert(cache_sql, [max_date, "boll", json.dumps(boll_data)])
+    return boll_data
