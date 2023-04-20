@@ -18,8 +18,8 @@ router = APIRouter(prefix="/cn")
 async def cn_all_symbol():
     sql = "replace into cn_stock_info(symbol,name,description) values(%s,%s,%s)"
     exist_sql = "select * from cn_stock_info where symbol= '{0}'"
-    today_data_df = ak.stock_zh_a_spot_em()
-    for index, row in today_data_df[["代码", "名称", "总市值"]].iterrows():
+    df_today_data = ak.stock_zh_a_spot_em()
+    for index, row in df_today_data[["代码", "名称", "总市值"]].iterrows():
         code = row["代码"]
         name = row["名称"]
         market_value = row["总市值"]
@@ -35,27 +35,17 @@ async def cn_all_symbol():
                 print("异常:", code)
                 print(e)
         db.insert(
-            "update cn_stock_info set market_value = %s where symbol = %s ",
-            (str(market_value), code),
+            "update cn_stock_info set market_value = %s, name=%s where symbol = %s ",
+            (str(market_value), str(name), code),
         )
-
     return {"message": "ok"}
-
-
-# @router.get("/symbol/busi/scope")
-# async def symbol_busi_scope():
-#     sql = "select * from cn_stock_info"
-#     result = db.query(sql)
-#     for symbol in result:
-#         stock_zyjs_ths_df = ak.stock_zyjs_ths(symbol=symbol[0])
-#         print(stock_zyjs_ths_df)
 
 
 @router.get("/history/data")
 async def cn_history_data(
     start_date: str, end_date: str, period: str = "daily", code: str = None
 ):
-    print("working")
+    print("当日数据")
     if code:
         save_symbol_his_data(code, start_date, end_date, period)
     else:
@@ -118,6 +108,9 @@ async def cn_today_analysis(code: str = None):
 
 @router.get("/data")
 async def cn_symbol_data_daily(symbol: str, start_date: str, end_date: str):
+    """
+    根据日期获取symbol数据
+    """
     sql = "select * from cn_stock_data where symbol = '{0}' and date BETWEEN '{1}' AND '{2}'".format(
         symbol, start_date, end_date
     )
@@ -163,3 +156,53 @@ async def bbands():
     cache_sql = "insert into cn_stock_indicators values(%s,%s,%s)"
     db.insert(cache_sql, [max_date, "boll", json.dumps(boll_data)])
     return boll_data
+
+
+@router.get("/capital/flow")
+async def capital_flows():
+    """
+    资金流向
+    """
+    df = ak.stock_fund_flow_individual(symbol="5日排行")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/concept/type")
+async def concept_flow():
+    """
+    概念类别
+    """
+    sql = "truncate table cn_stock_concept"
+    db.execute(sql)
+    sql = "insert into cn_stock_concept values(%s,%s,%s,%s,%s)"
+    df = ak.stock_board_concept_name_ths()
+    df = df.dropna()
+    data_list = df.values.tolist()
+    for data in data_list:
+        data[0] = data[0].strftime("%Y-%m-%d")
+    db.batchInsert(sql, data_list)
+    return {"message": "ok"}
+
+
+@router.get("/concept/flow")
+async def concept_flow():
+    """
+    概念资金流向
+    """
+    df = ak.stock_fund_flow_concept(symbol="3日排行")
+    sql = "select name ,code from cn_stock_concept where name in {0}".format(
+        tuple(df["行业"].values.tolist())
+    )
+    result = db.query(sql)
+    df2 = pd.DataFrame(columns=["行业", "code"], data=result)
+    df = pd.merge(df, df2, on="行业")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/concept/flow/detail")
+async def concept_flow(symbol):
+    """
+    成份股数据
+    """
+    df = ak.stock_board_cons_ths(symbol=symbol)
+    return json.loads(df.to_json(orient="records"))
