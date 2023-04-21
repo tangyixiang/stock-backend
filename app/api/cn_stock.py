@@ -185,11 +185,11 @@ async def concept_flow():
 
 
 @router.get("/concept/flow")
-async def concept_flow():
+async def concept_flow(symbol: str = "3日排行"):
     """
     概念资金流向
     """
-    df = ak.stock_fund_flow_concept(symbol="3日排行")
+    df = ak.stock_fund_flow_concept(symbol)
     sql = "select name ,code from cn_stock_concept where name in {0}".format(
         tuple(df["行业"].values.tolist())
     )
@@ -206,3 +206,50 @@ async def concept_flow(symbol):
     """
     df = ak.stock_board_cons_ths(symbol=symbol)
     return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/institutional/research")
+async def institutional_research():
+    """
+    机构调研
+    """
+    df = ak.stock_jgdy_tj_em(date="20230401")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/stock/comment")
+async def stock_comment_em():
+    """
+    千股千评
+    """
+    df = ak.stock_comment_em()
+    df = df.sort_values(by="目前排名", ascending=True)
+    df["交易日"] = pd.to_datetime(df["交易日"]).dt.strftime("%Y-%m-%d")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/stock/institutional/focus")
+async def stock_institutional_focus(symbol: str):
+    """
+    机构参与度
+    """
+    df = ak.stock_comment_detail_zlkp_jgcyd_em(symbol)
+    df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/north/money/board")
+async def stock_institutional_focus(
+    symbol: str = "北向资金增持行业板块排行", indicator: str = "今日"
+):
+    """
+    北向资金增持行业板块排行
+    :param symbol: choice of {"北向资金增持行业板块排行", "北向资金增持概念板块排行", "北向资金增持地域板块排行"}
+    :type symbol: str
+    :param indicator: choice of {"今日", "3日", "5日", "10日", "1月", "1季", "1年"}
+    :type indicator: str
+    """
+    df = ak.stock_hsgt_board_rank_em(symbol,indicator)
+    return json.loads(df.to_json(orient="records"))
+
+
