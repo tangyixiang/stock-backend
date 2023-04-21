@@ -7,16 +7,37 @@ import pandas as pd
 import pandas_ta as ta
 import json
 from app.utils.cn_stock_utils import save_symbol_his_data
+import warnings
+
+warnings.filterwarnings("ignore")
 
 router = APIRouter(prefix="/cn")
 
 
 @router.get("/all/symbol")
 async def cn_all_symbol():
-    query_sql = "select symbol from cn_stock_data group by symbol"
-    result = db.query(query_sql)
-    insert_sql = "insert into cn_stock_info(symbol) values (%s)"
-    db.batchInsert(insert_sql, result)
+    sql = "replace into cn_stock_info(symbol,name,description) values(%s,%s,%s)"
+    exist_sql = "select * from cn_stock_info where symbol= '{0}'"
+    df_today_data = ak.stock_zh_a_spot_em()
+    for index, row in df_today_data[["代码", "名称", "总市值"]].iterrows():
+        code = row["代码"]
+        name = row["名称"]
+        market_value = row["总市值"]
+        result = db.query(exist_sql.format(code))
+        if result[0][2] is None:
+            try:
+                scope_df = ak.stock_zyjs_ths(symbol=code)
+                scope = scope_df["经营范围"].iloc[-1]
+                # result.append()
+                db.insert(sql, (code, name, scope))
+            except Exception as e:
+                db.insert(sql, (code, name, ""))
+                print("异常:", code)
+                print(e)
+        db.insert(
+            "update cn_stock_info set market_value = %s, name=%s where symbol = %s ",
+            (str(market_value), str(name), code),
+        )
     return {"message": "ok"}
 
 
@@ -24,7 +45,7 @@ async def cn_all_symbol():
 async def cn_history_data(
     start_date: str, end_date: str, period: str = "daily", code: str = None
 ):
-    print("working")
+    print("当日数据")
     if code:
         save_symbol_his_data(code, start_date, end_date, period)
     else:
@@ -87,8 +108,148 @@ async def cn_today_analysis(code: str = None):
 
 @router.get("/data")
 async def cn_symbol_data_daily(symbol: str, start_date: str, end_date: str):
+    """
+    根据日期获取symbol数据
+    """
     sql = "select * from cn_stock_data where symbol = '{0}' and date BETWEEN '{1}' AND '{2}'".format(
         symbol, start_date, end_date
     )
     df = pd.read_sql_query(sql, db.pool.connection())
     return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/stock/boll")
+async def bbands():
+    """
+    布林区间
+    """
+    all_symbol_sql = "select symbol from cn_stock_info"
+    max_date_sql = "select max(date) from cn_stock_data"
+    max_date = db.query_single_col(max_date_sql)[0]
+
+    cache_data_sql = "select value from cn_stock_indicators where date = '{0}' and name = 'boll' ".format(
+        max_date
+    )
+    cache_data = db.query_single_col(cache_data_sql)
+    if cache_data:
+        return json.loads(cache_data[0])
+
+    result = db.query(all_symbol_sql)
+    boll_mid_list = []
+    boll_top_list = []
+    for symbol in result:
+        sql = "select * from cn_stock_data where symbol = '{0}' order by date desc limit 300".format(
+            symbol[0]
+        )
+        df = pd.read_sql_query(sql, db.pool.connection())
+        pd.to_datetime(df["date"])
+        df = df.sort_values("date")
+        boll = ta.bbands(df["close"])
+        df = pd.concat([df, boll], axis=1)
+        # 最后一天在布林中线
+        if df["BBP_5_2.0"].iloc[-1] > 0.4 and df["BBP_5_2.0"].iloc[-1] < 0.6:
+            boll_mid_list.append(df["symbol"].iloc[-1])
+        # 最后一天在布林线上方
+        if df["close"].iloc[-1] > df["BBU_5_2.0"].iloc[-1]:
+            boll_top_list.append(df["symbol"].iloc[-1])
+    boll_data = {"mid": boll_mid_list, "top": boll_top_list}
+    cache_sql = "insert into cn_stock_indicators values(%s,%s,%s)"
+    db.insert(cache_sql, [max_date, "boll", json.dumps(boll_data)])
+    return boll_data
+
+
+@router.get("/capital/flow")
+async def capital_flows():
+    """
+    资金流向
+    """
+    df = ak.stock_fund_flow_individual(symbol="5日排行")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/concept/type")
+async def concept_flow():
+    """
+    概念类别
+    """
+    sql = "truncate table cn_stock_concept"
+    db.execute(sql)
+    sql = "insert into cn_stock_concept values(%s,%s,%s,%s,%s)"
+    df = ak.stock_board_concept_name_ths()
+    df = df.dropna()
+    data_list = df.values.tolist()
+    for data in data_list:
+        data[0] = data[0].strftime("%Y-%m-%d")
+    db.batchInsert(sql, data_list)
+    return {"message": "ok"}
+
+
+@router.get("/concept/flow")
+async def concept_flow(symbol: str = "3日排行"):
+    """
+    概念资金流向
+    """
+    df = ak.stock_fund_flow_concept(symbol)
+    sql = "select name ,code from cn_stock_concept where name in {0}".format(
+        tuple(df["行业"].values.tolist())
+    )
+    result = db.query(sql)
+    df2 = pd.DataFrame(columns=["行业", "code"], data=result)
+    df = pd.merge(df, df2, on="行业")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/concept/flow/detail")
+async def concept_flow(symbol):
+    """
+    成份股数据
+    """
+    df = ak.stock_board_cons_ths(symbol=symbol)
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/institutional/research")
+async def institutional_research():
+    """
+    机构调研
+    """
+    df = ak.stock_jgdy_tj_em(date="20230401")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/stock/comment")
+async def stock_comment_em():
+    """
+    千股千评
+    """
+    df = ak.stock_comment_em()
+    df = df.sort_values(by="目前排名", ascending=True)
+    df["交易日"] = pd.to_datetime(df["交易日"]).dt.strftime("%Y-%m-%d")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/stock/institutional/focus")
+async def stock_institutional_focus(symbol: str):
+    """
+    机构参与度
+    """
+    df = ak.stock_comment_detail_zlkp_jgcyd_em(symbol)
+    df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+    return json.loads(df.to_json(orient="records"))
+
+
+@router.get("/north/money/board")
+async def stock_institutional_focus(
+    symbol: str = "北向资金增持行业板块排行", indicator: str = "今日"
+):
+    """
+    北向资金增持行业板块排行
+    :param symbol: choice of {"北向资金增持行业板块排行", "北向资金增持概念板块排行", "北向资金增持地域板块排行"}
+    :type symbol: str
+    :param indicator: choice of {"今日", "3日", "5日", "10日", "1月", "1季", "1年"}
+    :type indicator: str
+    """
+    df = ak.stock_hsgt_board_rank_em(symbol,indicator)
+    return json.loads(df.to_json(orient="records"))
+
+

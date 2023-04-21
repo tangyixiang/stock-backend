@@ -21,6 +21,19 @@ pool = PooledDB(
 )
 
 
+def execute(sql: str):
+    # 从连接池中获取连接
+    conn = pool.connection()
+    # 创建游标对象
+    cursor = conn.cursor()
+    # 插入
+    cursor.execute(sql)
+    conn.commit()
+    # 关闭游标对象和数据库连接
+    cursor.close()
+    conn.close()
+
+
 def insert(sql: str, params: tuple):
     # 从连接池中获取连接
     conn = pool.connection()
