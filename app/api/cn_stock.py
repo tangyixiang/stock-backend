@@ -19,6 +19,7 @@ async def cn_all_symbol():
     sql = "replace into cn_stock_info(symbol,name,description) values(%s,%s,%s)"
     exist_sql = "select * from cn_stock_info where symbol= '{0}'"
     df_today_data = ak.stock_zh_a_spot_em()
+    df_today_data.fillna(0, inplace=True)
     for index, row in df_today_data[["代码", "名称", "总市值"]].iterrows():
         code = row["代码"]
         name = row["名称"]
@@ -36,13 +37,13 @@ async def cn_all_symbol():
                 print(e)
         db.insert(
             "update cn_stock_info set market_value = %s, name=%s where symbol = %s ",
-            (str(market_value), str(name), code),
+            (market_value, str(name), code),
         )
     return {"message": "ok"}
 
 
-@router.get("/history/data")
-async def cn_history_data(
+@router.get("/download/stock/data")
+async def download_stock_data(
     start_date: str, end_date: str, period: str = "daily", code: str = None
 ):
     print("当日数据")
@@ -249,7 +250,5 @@ async def stock_institutional_focus(
     :param indicator: choice of {"今日", "3日", "5日", "10日", "1月", "1季", "1年"}
     :type indicator: str
     """
-    df = ak.stock_hsgt_board_rank_em(symbol,indicator)
+    df = ak.stock_hsgt_board_rank_em(symbol, indicator)
     return json.loads(df.to_json(orient="records"))
-
-

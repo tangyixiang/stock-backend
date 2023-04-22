@@ -38,7 +38,9 @@
   tristar (三星报喜)
   unique3river (上颈线)
   upsidegap2crows (上涨跳空两只乌鸦)
-  空头趋势反转形态：
+
+
+- 空头趋势反转形态：
   3inside (三内部下跌)
   3linestrike (三线打击)
   3outside (三外部下跌)
