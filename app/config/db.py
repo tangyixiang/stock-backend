@@ -1,10 +1,9 @@
-import psycopg2
 from psycopg2 import pool
 
 # 创建连接池
 dbpool = pool.SimpleConnectionPool(
-    minconn=1,
-    maxconn=10,
+    minconn=50,
+    maxconn=100,
     host="43.136.114.133",
     database="stock_data",
     user="postgres",
@@ -23,7 +22,7 @@ def execute(sql: str):
     conn.commit()
     # 关闭游标对象和数据库连接
     cursor.close()
-    conn.close()
+    dbpool.putconn(conn)
 
 
 def insert(sql: str, params: tuple):
@@ -36,7 +35,7 @@ def insert(sql: str, params: tuple):
     conn.commit()
     # 关闭游标对象和数据库连接
     cursor.close()
-    conn.close()
+    dbpool.putconn(conn)
 
 
 def batchInsert(sql: str, params: list):
@@ -49,7 +48,7 @@ def batchInsert(sql: str, params: list):
     conn.commit()
     # 关闭游标对象和数据库连接
     cursor.close()
-    conn.close()
+    dbpool.putconn(conn)
 
 
 def query(sql):
@@ -60,6 +59,9 @@ def query(sql):
     # 查询
     cursor.execute(sql)
     result = cursor.fetchall()
+    # 关闭游标对象和数据库连接
+    cursor.close()
+    dbpool.putconn(conn)
     return result
 
 
@@ -71,4 +73,7 @@ def query_single_col(sql):
     # 查询
     cursor.execute(sql)
     result = cursor.fetchone()
+    # 关闭游标对象和数据库连接
+    cursor.close()
+    dbpool.putconn(conn)
     return result

@@ -8,6 +8,8 @@
       "name": "Python: FastAPI",
       "type": "python",
       "request": "launch",
+      // "program": "main.py",
+      // "console": "integratedTerminal"
       "module": "uvicorn",
       "args": ["main:app", "--reload"],
       "jinja": true,

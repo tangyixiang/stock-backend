@@ -1,19 +1,34 @@
+import uvicorn
+import asyncio
 from fastapi import FastAPI
-import pandas as pd
-from app.config.db import dbpool
+from app.api import StockData, StockIndicator, StockIniit
+from app.task.DataScheduleTask import app as app_rocketry
 
 app = FastAPI()
+app.include_router(StockIndicator.router)
+app.include_router(StockIniit.router)
 
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+class Server(uvicorn.Server):
+    """Customized uvicorn.Server
+
+    Uvicorn server overrides signals and we need to include
+    Rocketry to the signals."""
+
+    def handle_exit(self, sig: int, frame) -> None:
+        app_rocketry.session.shut_down()
+        return super().handle_exit(sig, frame)
 
 
-@app.get("/indicator/calc")
-async def indicator_calc(name: str, symbol: str):
-    df = pd.read_sql(
-        "select * from cn_stock_data where symbol = '600478' order by date asc",
-        dbpool.getconn(),
+async def main():
+    """Run scheduler and the API"""
+    server = Server(
+        config=uvicorn.Config(app, host="0.0.0.0", reload=True, workers=1, loop="asyncio")
     )
-    print(df)
+    api = asyncio.create_task(server.serve())
+    sched = asyncio.create_task(app_rocketry.serve())
+    await asyncio.wait([sched, api])
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
