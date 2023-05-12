@@ -21,9 +21,7 @@ async def init_all_symbol():
 
 @router.get("/cn/data/tocsv")
 async def init_data_tocsv():
-    symbol_list = list(
-        pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"]
-    )
+    symbol_list = list(pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"])
     for symbol in symbol_list:
         log.info("同步数据:{}", symbol)
         today = datetime.now().strftime("%Y%m%d")
@@ -42,11 +40,9 @@ async def import_csv_data():
         log.info("开始导入:{}", file_name)
         file = os.path.join(csv_path, file_name)
         with open(file, "r", encoding="UTF-8") as f:
-            conn = dbpool.getconn()
-            cursor = conn.cursor()
-            cursor.copy_from(
-                f,
-                "cn_stock_data",
+            copy_from(
+                file=f,
+                table="cn_stock_data",
                 sep=",",
                 null="",
                 columns=(
@@ -64,6 +60,4 @@ async def import_csv_data():
                     "exchange_rate",
                 ),
             )
-            conn.commit()
-            cursor.close()
         log.info("导入完成")
