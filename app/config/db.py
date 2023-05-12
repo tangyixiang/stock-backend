@@ -2,8 +2,8 @@ from psycopg2 import pool
 
 # 创建连接池
 dbpool = pool.SimpleConnectionPool(
-    minconn=50,
-    maxconn=100,
+    minconn=1,
+    maxconn=10,
     host="43.136.114.133",
     database="stock_data",
     user="postgres",

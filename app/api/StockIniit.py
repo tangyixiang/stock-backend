@@ -32,7 +32,7 @@ async def init_data_tocsv():
         file_name = csv_path + "/" + symbol + ".csv"
         df.to_csv(file_name, index=False, header=False, encoding="UTF-8")
         log.info("同步完成:{}", symbol)
-        return "ok"
+    return "ok"
 
 
 @router.get("/cn/data/import")
