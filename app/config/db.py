@@ -82,6 +82,8 @@ def query_single_col(sql):
 def copy_from(file, table, sep, null, columns):
     conn = dbpool.getconn()
     cursor = conn.cursor()
-    cursor.copy_from(file, table, sep, null, columns)
+    cursor.copy_from(file=file, table=table, sep=sep, null=null, columns=columns)
+    conn.commit()
+    # 关闭游标对象和数据库连接
     cursor.close()
     dbpool.putconn(conn)

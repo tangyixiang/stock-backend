@@ -22,6 +22,7 @@ async def init_all_symbol():
 @router.get("/cn/data/tocsv")
 async def init_data_tocsv():
     symbol_list = list(pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"])
+    symbol_list=["600478"]
     for symbol in symbol_list:
         log.info("同步数据:{}", symbol)
         today = datetime.now().strftime("%Y%m%d")
