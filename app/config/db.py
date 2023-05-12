@@ -79,7 +79,7 @@ def query_single_col(sql):
     return result
 
 
-def copy_from(file, table, sep, null, columns=None):
+def copy_from(file, table, sep, null, columns):
     conn = dbpool.getconn()
     cursor = conn.cursor()
     cursor.copy_from(file, table, sep, null, columns)
