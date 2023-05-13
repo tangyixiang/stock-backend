@@ -6,6 +6,7 @@ from app.task.DataScheduleTask import app as app_rocketry
 
 app = FastAPI()
 app.include_router(StockIndicator.router)
+app.include_router(StockData.router)
 app.include_router(StockIniit.router)
 
 

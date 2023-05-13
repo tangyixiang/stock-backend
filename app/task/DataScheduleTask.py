@@ -15,39 +15,33 @@ app = Rocketry()
 def all_symbol():
     log.info("开始同步symbol")
     today_table = ak.stock_zh_a_spot_em()
+    # 过滤掉退市的
+    today_table = today_table[today_table["总市值"].notna()]
     table = today_table[["代码", "名称", "总市值"]]
 
     # 获取所有股票代码列表、已存在的代码列表和新的代码列表
-    all_symbol_list = list(table["代码"])
-    exist_symbol_list = list(
-        pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"]
-    )
-    new_symbol_list = [
-        symbol for symbol in all_symbol_list if symbol not in exist_symbol_list
-    ]
+    all_symbol_set = set(table["代码"])
+    exist_symbol_set = set(pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"])
+    new_symbol_set = all_symbol_set - exist_symbol_set
 
-    if len(new_symbol_list) == 0:
+    if len(new_symbol_set) == 0:
         return
 
     # 获取新代码对应的股票信息
-    new_symbols_df = pd.DataFrame(data=new_symbol_list, columns=["代码"])
+    new_symbols_df = pd.DataFrame(data=new_symbol_set, columns=["代码"])
     table = pd.merge(table, new_symbols_df, on="代码", how="right")
     table_row = table.values.tolist()
     sql = "insert into cn_stock_info(symbol,name,market_value) values (%s,%s,%s)"
     batchInsert(sql, table_row)
 
     # 更新新代码对应的经营范围
-    for symbol in exist_symbol_list:
+    for symbol in new_symbol_set:
         try:
             table2 = ak.stock_zyjs_ths(symbol)
             desc = table2["经营范围"][0]
-            execute(
-                f"update cn_stock_info set description = '{desc}' where symbol = '{symbol}'"
-            )
+            execute(f"update cn_stock_info set description = '{desc}' where symbol = '{symbol}'")
         except Exception as e:
-            log.error(str(e))
             log.error("异常,symbol:{}", symbol)
-
     log.info("同步symbol 结束")
 
 
@@ -55,9 +49,7 @@ def all_symbol():
 def open_day_data():
     today = datetime.now().strftime("%Y%m%d")
     log.info("开始同步数据,日期:{}", today)
-    symbol_list = list(
-        pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"]
-    )
+    symbol_list = list(pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"])
     for symbol in symbol_list:
         log.info("保存数据:{}", symbol)
         data = ak.stock_zh_a_hist(symbol=symbol, start_date=today, end_date=today)
@@ -67,4 +59,3 @@ def open_day_data():
             data.values.tolist(),
         )
         log.info("同步完成:{}", symbol)
-
