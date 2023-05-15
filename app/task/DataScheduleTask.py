@@ -59,3 +59,20 @@ def open_day_data():
             data.values.tolist(),
         )
         log.info("同步完成:{}", symbol)
+
+
+@app.task(cron("40 15 * * 1-5"))
+def vol_up():
+    today = datetime.now().strftime("%Y%m%d")
+    db_max_date = db_max_date = query("select max(date) from cn_stock_data")[0][0].strftime("%Y-%m-%d")
+    if today != db_max_date:
+        log.info(f"{today} 不是open day")
+        return
+    log.info("同步量价齐升")
+    df = ak.stock_rank_ljqs_ths()
+    table = df.loc[:, ["股票代码", "股票简称", "量价齐升天数", "阶段涨幅", "所属行业"]]
+    table.insert(0, column="date", value=today)
+    table_row = table.values.tolist()
+    sql = "insert into cn_stock_vol_up(date,symbol,name,up_days,up_quota,industry) values (%s,%s,%s,%s,%s,%s)"
+    batchInsert(sql, table_row)
+    log.info("同步完成")

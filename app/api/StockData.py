@@ -1,7 +1,9 @@
 import json
 import pandas as pd
+import akshare as ak
 from fastapi import APIRouter
 from app.config.db import *
+import app.task.DataScheduleTask as task
 
 router = APIRouter(prefix="/cn")
 
@@ -21,3 +23,10 @@ async def indicator_calc(name: str, symbol: str):
         dbpool.getconn(),
     )
     print(df)
+
+
+@router.get("/vol/up")
+async def vol_up(date: str):
+    df = pd.read_sql(f"select * from cn_stock_vol_up where date = '{date}'", dbpool.getconn())
+    data = df.to_json(orient="records", force_ascii=False)
+    return {"total": len(df), "data": json.loads(data)}
