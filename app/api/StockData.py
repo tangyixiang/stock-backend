@@ -26,7 +26,15 @@ async def indicator_calc(name: str, symbol: str):
 
 
 @router.get("/vol/up")
-async def vol_up(date: str):
-    df = pd.read_sql(f"select * from cn_stock_vol_up where date = '{date}'", dbpool.getconn())
-    data = df.to_json(orient="records", force_ascii=False)
-    return {"total": len(df), "data": json.loads(data)}
+async def vol_up(date: str, pageSize: int = 20, pageNo: int = 1):
+    offset = (pageNo - 1) * pageSize
+    df = pd.read_sql(f"select * from cn_stock_vol_up where date = '{date}' offset {offset} limit {pageSize}", dbpool.getconn())
+    # data = df.to_json(orient="records", force_ascii=False)
+    symbol_list = df["symbol"].values.tolist()
+    data_list = []
+    for symbol in symbol_list:
+        sql = f"select * from (select * from cn_stock_data where symbol = '{symbol}' order by date desc limit 90) t order by date asc"
+        data = query_for_obj(sql)
+        data_list.append({"symbol": symbol, "data": data})
+    return {"total": len(df), "list": data_list}
+

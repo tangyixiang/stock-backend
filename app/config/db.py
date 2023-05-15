@@ -87,3 +87,18 @@ def copy_from(file, table, sep, null, columns):
     # 关闭游标对象和数据库连接
     cursor.close()
     dbpool.putconn(conn)
+
+
+def query_for_obj(sql):
+    # 从连接池中获取连接
+    conn = dbpool.getconn()
+    # 创建游标对象
+    cursor = conn.cursor()
+    # 查询
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    rows = [dict(zip([column[0] for column in cursor.description], row)) for row in result]
+    # 关闭游标对象和数据库连接
+    cursor.close()
+    dbpool.putconn(conn)
+    return rows
