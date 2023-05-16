@@ -63,7 +63,7 @@ def open_day_data():
 
 @app.task(cron("40 15 * * 1-5"))
 def vol_up():
-    today = datetime.now().strftime("%Y%m%d")
+    today = datetime.now().strftime("%Y-%m-%d")
     db_max_date = db_max_date = query("select max(date) from cn_stock_data")[0][0].strftime("%Y-%m-%d")
     if today != db_max_date:
         log.info(f"{today} 不是open day")
