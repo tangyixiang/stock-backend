@@ -1,6 +1,11 @@
-from sqlalchemy import Column, Index, UniqueConstraint
+from sqlalchemy import Column, Index, UniqueConstraint, PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import VARCHAR, TEXT, DATE, DOUBLE_PRECISION, INTEGER, NUMERIC
+from sqlalchemy.dialects.postgresql import VARCHAR, TEXT, DATE, DOUBLE_PRECISION, INTEGER
+from sqlalchemy import MetaData
+
+# from app.config.db import *
+
+metadata = MetaData(schema="cn_stock")
 
 Base = declarative_base()
 
@@ -42,10 +47,13 @@ class CnStockVolUp(Base):
     symbol = Column(VARCHAR(10), primary_key=True)
     name = Column(VARCHAR(255))
     up_days = Column(INTEGER)
-    up_quota = Column(NUMERIC)
+    up_quota = Column(DOUBLE_PRECISION)
     industry = Column(VARCHAR(50))
 
-    __table_args__ = (Index("idx_date", date),)
+    __table_args__ = (
+        Index("idx_date", date),
+        PrimaryKeyConstraint("date", "symbol"),
+    )
 
 
 # StockBuyWatch
