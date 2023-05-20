@@ -2,7 +2,7 @@ from psycopg2 import pool
 from sqlalchemy import create_engine
 
 engine = create_engine(
-    "postgresql://postgres:guilin@2022@43.136.114.133:5432",
+    "postgresql://postgres:11111@43.136.114.133:5432",
     database="stock_data",
     schema="cn_stock",
     echo=True,  # echo 设为 True 会打印出实际执行的 sql，调试的时候更方便
