@@ -1,8 +1,17 @@
-from psycopg2 import pool
+import configparser
 from sqlalchemy import create_engine
 
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+username = config.get("database", "username")
+password = config.get("database", "password")
+host = config.get("database", "host")
+port = config.get("database", "port")
+name = config.get("database", "name")
+
 engine = create_engine(
-    "postgresql://postgres:guilin2022@43.136.114.133:5432",
+    f"postgresql://{username}:{password}@{host}:{port}/{name}",
     database="stock_data",
     schema="cn_stock",
     echo=True,  # echo 设为 True 会打印出实际执行的 sql，调试的时候更方便
