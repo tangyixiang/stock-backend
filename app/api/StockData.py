@@ -38,7 +38,7 @@ async def vol_up(date: str, industry: str):
     symbol_list = df["symbol"].values.tolist()
     data_list = []
     for symbol in symbol_list:
-        sql = f"select * from (select * from cn_stock_data where symbol = '{symbol}' order by date desc limit 90) t order by date asc"
+        sql = f"select * from (select * from cn_stock_data where symbol = '{symbol}' order by date desc limit 30) t order by date asc"
         data = query_for_obj(sql)
         row_data = list(df.loc[df["symbol"] == symbol].squeeze())
         name = row_data[2]
