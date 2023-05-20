@@ -13,7 +13,7 @@ Base = declarative_base()
 class CnStockData(Base):
     __tablename__ = "cn_stock_data"
 
-    symbol = Column(VARCHAR(32))
+    symbol = Column(VARCHAR(32), primary_key=True)
     date = Column(DATE, primary_key=True)
     open = Column(DOUBLE_PRECISION)
     close = Column(DOUBLE_PRECISION)
@@ -50,10 +50,7 @@ class CnStockVolUp(Base):
     up_quota = Column(DOUBLE_PRECISION)
     industry = Column(VARCHAR(50))
 
-    __table_args__ = (
-        Index("idx_date", date),
-        PrimaryKeyConstraint("date", "symbol"),
-    )
+    __table_args__ = (Index("idx_date", date), UniqueConstraint("symbol", "date", name="idx_symbol_date"))
 
 
 # StockBuyWatch

@@ -2,11 +2,8 @@ import pandas as pd
 from fastapi import APIRouter, Depends
 from app.config.db import *
 from app.model.CnStockModel import *
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
-
-from objtyping import to_primitive
-import json
 
 router = APIRouter(prefix="/cn")
 
@@ -30,7 +27,7 @@ async def list_symbol(pageSize: int = 10, pageNo: int = 1, db: Session = Depends
 
 @router.get("/vol/category")
 def vol_category(date: str, db: Session = Depends(getSesion)):
-    data = db.query(CnStockVolUp).filter(CnStockVolUp.date == date).all()
+    data = db.query(CnStockVolUp).where(CnStockVolUp.date == date).all()
     return data
 
 

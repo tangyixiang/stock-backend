@@ -1,10 +1,11 @@
 import uvicorn
 import asyncio
-from fastapi import FastAPI
+from fastapi import FastAPI, responses
 from app.api import StockData, StockIndicator, StockIniit
 from app.task.DataScheduleTask import app as app_rocketry
 
-app = FastAPI()
+
+app = FastAPI(default_response_class=responses.ORJSONResponse)
 app.include_router(StockIndicator.router)
 app.include_router(StockData.router)
 app.include_router(StockIniit.router)
@@ -23,9 +24,7 @@ class Server(uvicorn.Server):
 
 async def main():
     """Run scheduler and the API"""
-    server = Server(
-        config=uvicorn.Config(app, host="0.0.0.0", reload=True, workers=1, loop="asyncio")
-    )
+    server = Server(config=uvicorn.Config(app, host="0.0.0.0", reload=True, workers=1, loop="asyncio"))
     api = asyncio.create_task(server.serve())
     sched = asyncio.create_task(app_rocketry.serve())
     await asyncio.wait([sched, api])
