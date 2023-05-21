@@ -16,19 +16,19 @@ async def list_symbol(pageSize: int = 10, pageNo: int = 1, db: Session = Depends
     return {"total": total, "list": data}
 
 
-# @router.get("/indicator/calc")
-# async def indicator_calc(name: str, symbol: str):
-#     df = pd.read_sql(
-#         f"select * from cn_stock_data where symbol = '{symbol}' order by date asc",
-#         dbpool.getconn(),
-#     )
-#     print(df)
+@router.get("/symbol/history/data")
+async def symbol_history_data(symbol: str, period: int = 300, db: Session = Depends(getSesion)):
+    data = db.query(CnStockData).where(CnStockData.symbol == symbol).order_by(CnStockData.date.desc()).limit(period).all()
+    return data
 
 
 @router.get("/vol/category")
 def vol_category(date: str, db: Session = Depends(getSesion)):
     data = db.query(CnStockVolUp).where(CnStockVolUp.date == date).all()
-    return data
+    industry_set = set()
+    for x in data:
+        industry_set.add(x.industry)
+    return industry_set
 
 
 @router.get("/vol/up")
@@ -39,7 +39,7 @@ async def vol_up(date: str, industry: str, db: Session = Depends(getSesion)):
     data_list = []
     for symbol in symbol_list:
         data = db.query(CnStockData).where(CnStockData.symbol == symbol).order_by(CnStockData.date.desc()).limit(90).all()
-        data.sort(key=attrgetter('date'))
+        data.sort(key=attrgetter("date"))
         row_data = list(df.loc[df["symbol"] == symbol].squeeze())
         name = row_data[2]
         market_value = row_data[len(row_data) - 1]
