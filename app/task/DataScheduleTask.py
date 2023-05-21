@@ -16,13 +16,14 @@ app = Rocketry()
 @app.task(cron("10 15 * * 1-5"))
 def all_symbol():
     log.info("开始同步symbol")
+    db = getSesion()
     today_table = ak.stock_zh_a_spot_em()
     # 过滤掉退市的
     today_table = today_table[today_table["总市值"].notna()]
     table = today_table[["代码", "名称", "总市值"]]
     # 获取所有股票代码列表、已存在的代码列表和新的代码列表
     all_symbol_set = set(table["代码"])
-    exist_symbol_set = set(select(CnStockInfo.symbol))
+    exist_symbol_set = set(db.query(CnStockInfo.symbol).all())
     new_symbol_set = all_symbol_set - exist_symbol_set
 
     if len(new_symbol_set) == 0:
@@ -52,7 +53,7 @@ def all_symbol():
 def open_day_data():
     today = datetime.now().strftime("%Y%m%d")
     log.info("开始同步数据,日期:{}", today)
-    symbol_list = list(pd.read_sql("select symbol from cn_stock_info", dbpool.getconn())["symbol"])
+    symbol_list = list(pd.read_sql("select symbol from cn_stock_info", engine.connect())["symbol"])
     for symbol in symbol_list:
         log.info("保存数据:{}", symbol)
         data = ak.stock_zh_a_hist(symbol=symbol, start_date=today, end_date=today)

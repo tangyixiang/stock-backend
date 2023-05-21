@@ -1,7 +1,7 @@
 import configparser
 from urllib.parse import quote
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -26,7 +26,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 # Dependency
-def getSesion():
+def getSesion() -> Session:
     db = SessionLocal()
     try:
         yield db
@@ -37,3 +37,13 @@ def getSesion():
 def batch_insert(sql, params):
     with engine.connect() as conn:
         conn.execute(sql, params)
+
+
+def copy_from(file, table, sep, null, columns):
+    conn = engine.raw_connection()
+    cursor = conn.cursor()
+    cursor.copy_from(file=file, table=table, sep=sep, null=null, columns=columns)
+    conn.commit()
+    # 关闭游标对象和数据库连接
+    cursor.close()
+    conn.close()
