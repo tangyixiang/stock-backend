@@ -19,6 +19,7 @@ async def list_symbol(pageSize: int = 10, pageNo: int = 1, db: Session = Depends
 @router.get("/symbol/history/data")
 async def symbol_history_data(symbol: str, period: int = 300, db: Session = Depends(getSesion)):
     data = db.query(CnStockData).where(CnStockData.symbol == symbol).order_by(CnStockData.date.desc()).limit(period).all()
+    data.sort(key=lambda x: x.date)
     return data
 
 
