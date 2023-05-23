@@ -4,6 +4,7 @@ from app.config.db import *
 from app.model.CnStockModel import *
 from sqlalchemy.orm import Session
 from operator import attrgetter
+from app.task.DataScheduleTask import *
 
 router = APIRouter(prefix="/cn")
 
@@ -46,3 +47,10 @@ async def vol_up(date: str, industry: str, db: Session = Depends(getSesion)):
         market_value = row_data[len(row_data) - 1]
         data_list.append({"symbol": symbol, "name": name, "market_value": market_value, "data": data})
     return {"total": len(df), "list": data_list}
+
+
+# @router.get("/test")
+# async def test():
+#     # all_symbol()
+#     # open_day_data()
+#     vol_up()

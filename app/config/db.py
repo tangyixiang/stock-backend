@@ -25,6 +25,10 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+def singleSession() -> Session:
+    return SessionLocal()
+
+
 # Dependency
 def getSesion() -> Session:
     db = SessionLocal()
@@ -36,7 +40,8 @@ def getSesion() -> Session:
 
 def batch_insert(sql, params):
     with engine.connect() as conn:
-        conn.execute(sql, params)
+        conn.execute(statement=sql, parameters=params)
+        conn.commit()
 
 
 def copy_from(file, table, sep, null, columns):
