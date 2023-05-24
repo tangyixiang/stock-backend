@@ -20,10 +20,10 @@ jobs:
     - name: update project
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        port: ${{ secrets.PORT }}
+        host: ${{ env.SERVER_HOST }}
+        username: ${{ env.USER_NAME }}
+        key: ${{ env.SSH_PRIVATE_KEY }}
+        port: 22
         script: |
           cd ~/stock-backend
           git pull
