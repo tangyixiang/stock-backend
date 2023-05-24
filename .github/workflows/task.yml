@@ -23,5 +23,5 @@ jobs:
         host: ${{ env.SERVER_HOST }}
         user: ${{ env.USER_NAME }}
         private_key: ${{ env.SSH_PRIVATE_KEY }}
-        command: cd ~/stock-backend && git pull && /bin/bash
+        command: cd ~/stock-backend && git pull && /bin/bash server.sh
           
