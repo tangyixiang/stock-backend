@@ -25,7 +25,5 @@ jobs:
         key: ${{ env.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          cd ~/stock-backend
-          git pull
-          sh server.sh
+          cd ~/stock-backend && git pull && /bin/bash
           
