@@ -28,3 +28,4 @@ jobs:
           cd ~/stock-backend
           git pull
           sh server.sh
+          
