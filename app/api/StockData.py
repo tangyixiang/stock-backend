@@ -5,21 +5,27 @@ from app.model.CnStockModel import *
 from sqlalchemy.orm import Session
 from operator import attrgetter
 from app.task.DataScheduleTask import *
+from app.model.CnStockQueryModel import *
 
 router = APIRouter(prefix="/cn")
 
 
-@router.get("/symbol/list")
-async def list_symbol(pageSize: int = 10, pageNo: int = 1, max: int = None, min: int = None, db: Session = Depends(getSesion)):
-    offset = (pageNo - 1) * pageSize
-    if max:
-        enlarge_max = max * 10000 * 10000
-        enlarge_min = min * 10000 * 10000
-        total = db.query(CnStockInfo).filter(CnStockInfo.market_value > enlarge_min).filter(CnStockInfo.market_value < enlarge_max).count()
-        data = db.query(CnStockInfo).filter(CnStockInfo.market_value > enlarge_min).filter(CnStockInfo.market_value < enlarge_max).order_by(CnStockInfo.market_value.desc()).offset(offset).limit(pageSize).all()
-    else:
-        total = db.query(CnStockInfo).count()
-        data = db.query(CnStockInfo).order_by(CnStockInfo.market_value.desc()).offset(offset).limit(pageSize).all()
+@router.post("/symbol/list")
+async def list_symbol(query: StockInfoQuery, db: Session = Depends(getSesion)):
+    offset = (query.pageNo - 1) * query.pageSize
+    query_list = []
+
+    if query.max:
+        enlarge_max = query.max * 10000 * 10000
+        enlarge_min = query.min * 10000 * 10000
+        query_list.append(CnStockInfo.market_value > enlarge_min)
+        query_list.append(CnStockInfo.market_value < enlarge_max)
+
+    if query.symbol:
+        query_list.append(CnStockInfo.symbol == query.symbol)
+
+    total = db.query(CnStockInfo).filter(*query_list).count()
+    data = db.query(CnStockInfo).filter(*query_list).order_by(CnStockInfo.market_value.desc()).offset(offset).limit(query.pageSize).all()
     return {"total": total, "list": data}
 
 

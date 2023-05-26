@@ -24,9 +24,10 @@ def all_symbol():
     # 更新市值
     for index, row in table.iterrows():
         code = row["代码"]
+        name = row["名称"]
         market_value = row["总市值"]
         with engine.begin() as conn:
-            stmt = update(CnStockInfo).where(CnStockInfo.symbol == code).values(market_value=market_value)
+            stmt = update(CnStockInfo).where(CnStockInfo.symbol == code).values(market_value=market_value, name=name)
             conn.execute(stmt)
 
     # 获取所有股票代码列表、已存在的代码列表和新的代码列表
