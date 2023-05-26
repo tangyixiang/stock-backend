@@ -10,10 +10,16 @@ router = APIRouter(prefix="/cn")
 
 
 @router.get("/symbol/list")
-async def list_symbol(pageSize: int = 10, pageNo: int = 1, db: Session = Depends(getSesion)):
+async def list_symbol(pageSize: int = 10, pageNo: int = 1, max: int = None, min: int = None, db: Session = Depends(getSesion)):
     offset = (pageNo - 1) * pageSize
-    total = db.query(CnStockInfo).count()
-    data = db.query(CnStockInfo).order_by(CnStockInfo.market_value.desc()).offset(offset).limit(pageSize).all()
+    if max:
+        enlarge_max = max * 10000 * 10000
+        enlarge_min = min * 10000 * 10000
+        total = db.query(CnStockInfo).filter(CnStockInfo.market_value > enlarge_min).filter(CnStockInfo.market_value < enlarge_max).count()
+        data = db.query(CnStockInfo).filter(CnStockInfo.market_value > enlarge_min).filter(CnStockInfo.market_value < enlarge_max).order_by(CnStockInfo.market_value.desc()).offset(offset).limit(pageSize).all()
+    else:
+        total = db.query(CnStockInfo).count()
+        data = db.query(CnStockInfo).order_by(CnStockInfo.market_value.desc()).offset(offset).limit(pageSize).all()
     return {"total": total, "list": data}
 
 
