@@ -18,13 +18,10 @@ jobs:
 
     steps:
     - name: update project
-      uses: appleboy/ssh-action@v0.1.10
+      uses: D3rHase/ssh-command-action@v0.2.2
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        port: ${{ secrets.PORT }}
-        script: |
-          cd ~/stock-backend
-          git pull
-          sh server.sh
+        host: ${{ env.SERVER_HOST }}
+        user: ${{ env.USER_NAME }}
+        private_key: ${{ env.SSH_PRIVATE_KEY }}
+        command: cd ~/stock-backend && git pull && /bin/bash server.sh
+ 
