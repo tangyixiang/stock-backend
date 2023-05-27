@@ -32,10 +32,18 @@
 
 # print(df)
 
-from sqlalchemy import select
-from app.config.db import *
-from app.model.CnStockModel import *
 
-exist_symbol_set = set(select(CnStockInfo.symbol))
+import akshare as ak
 
-print(exist_symbol_set)
+# df = ak.stock_zh_index_spot()
+# df.to_excel("type.xlsx")
+
+# df = ak.stock_zh_index_daily(symbol="sh000001")
+
+df = ak.stock_board_industry_name_em()
+
+result = df['上涨家数'] + df['下跌家数']
+
+print(result.sum())
+
+# print(df)

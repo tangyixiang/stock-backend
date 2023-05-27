@@ -6,6 +6,7 @@ from app.config.db import *
 from datetime import datetime
 from sqlalchemy import text, func, update
 from app.model.CnStockModel import *
+from app.utils.CommonUtil import *
 
 import pandas as pd
 
@@ -90,15 +91,12 @@ def open_day_data():
 
 @app.task(cron("40 15 * * 1-5"))
 def vol_up():
-    today = datetime.now().strftime("%Y-%m-%d")
-    db = singleSession()
-    db_max_date = db.query(func.max(CnStockData.date)).scalar().strftime("%Y-%m-%d")
-    if today != db_max_date:
-        log.info(f"{today} 不是open day")
+    if is_openday() == False:
         return
     log.info("同步量价齐升")
     df = ak.stock_rank_ljqs_ths()
     table = df.loc[:, ["股票代码", "股票简称", "量价齐升天数", "阶段涨幅", "所属行业"]]
+    today = datetime.now().strftime("%Y-%m-%d")
     table.insert(0, column="date", value=today)
     rows = []
     for row in table.values.tolist():
@@ -106,3 +104,38 @@ def vol_up():
     sql = text("insert into cn_stock_vol_up(date,symbol,name,up_days,up_quota,industry) values (:date,:symbol,:name,:up_days,:up_quota,:industry)")
     batch_insert(sql, rows)
     log.info("同步完成")
+
+
+# @app.task(cron("42 15 * * 1-5"))
+def three_index():
+    # 三大指数
+    list = ["sh000001", "399001", "3990006"]
+    for symbol in list:
+        df = ak.stock_zh_index_daily(symbol)
+
+
+@app.task(cron("42 15 * * 1-5"))
+def three_index():
+    # 行业板块
+    if is_openday() == False:
+        return
+    today = datetime.now().strftime("%Y-%m-%d")
+    df = ak.stock_board_industry_name_em()
+    df.insert(loc=0, column="date", value=today)
+    columns = [
+        "date",
+        "rank",
+        "industry_name",
+        "industry_code",
+        "price",
+        "diff_quota",
+        "diff_per",
+        "market_value",
+        "exchange_rate",
+        "up_num",
+        "dowm_num",
+        "leader_name",
+        "leader_per",
+    ]
+    df.to_sql(name="cn_stock_industry", con=engine.connect(), index=True, if_exists="replace", columns=columns)
+    log.info("行业板块同步完成")

@@ -63,3 +63,13 @@ class StockBuyWatch(Base):
     indicator = Column(TEXT)
 
     __table_args__ = (Index("stock_buy_watch_date_idx", date),)
+
+
+# StockBuyWatch
+class CnStockIndex(Base):
+    __tablename__ = "cn_stock_index"
+
+    symbol = Column(VARCHAR(50), primary_key=True)
+    name = Column(VARCHAR(50))
+    info = Column(TEXT)
+    focus = Column(INTEGER)
