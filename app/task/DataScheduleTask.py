@@ -117,12 +117,13 @@ def three_index():
 @app.task(cron("42 15 * * 1-5"))
 def three_index():
     # 行业板块
-    if is_openday() == False:
-        return
+    # if is_openday() == False:
+    #     return
     today = datetime.now().strftime("%Y-%m-%d")
     df = ak.stock_board_industry_name_em()
     df.insert(loc=0, column="date", value=today)
-    columns = [
+    origin_columns_list = list(df.columns)
+    column_list = [
         "date",
         "rank",
         "industry_name",
@@ -137,5 +138,11 @@ def three_index():
         "leader_name",
         "leader_per",
     ]
-    df.to_sql(name="cn_stock_industry", con=engine.connect(), index=True, if_exists="replace", columns=columns)
+
+    for index, item in enumerate(column_list):
+        origin_columns_list[index] = item
+
+    df.columns = origin_columns_list
+    df.to_sql(name="cn_stock_industry", con=engine.connect(), index=False, if_exists="append")
     log.info("行业板块同步完成")
+
