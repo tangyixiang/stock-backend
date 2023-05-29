@@ -91,7 +91,7 @@ def open_day_data():
 
 @app.task(cron("40 15 * * 1-5"))
 def vol_up():
-    if is_openday() == False:
+    if not is_openday():
         return
     log.info("同步量价齐升")
     df = ak.stock_rank_ljqs_ths()
@@ -117,8 +117,9 @@ def three_index():
 @app.task(cron("42 15 * * 1-5"))
 def three_index():
     # 行业板块
-    if is_openday() == False:
+    if not is_openday():
         return
+    log.info("同步行业板块")
     today = datetime.now().strftime("%Y-%m-%d")
     df = ak.stock_board_industry_name_em()
     df.insert(loc=0, column="date", value=today)
