@@ -73,3 +73,24 @@ class CnStockIndex(Base):
     name = Column(VARCHAR(50))
     info = Column(TEXT)
     focus = Column(INTEGER)
+
+
+# stock_industry
+class CnStockIndustry(Base):
+    __tablename__ = "cn_stock_industry"
+
+    date = Column(VARCHAR(32), primary_key=True)
+    rank = Column(INTEGER)
+    industry_name = Column(VARCHAR(50))
+    industry_code = Column(VARCHAR(50), primary_key=True)
+    price = Column(DOUBLE_PRECISION)
+    diff_quota = Column(DOUBLE_PRECISION)
+    diff_per = Column(DOUBLE_PRECISION)
+    market_value = Column(INTEGER)
+    exchange_rate = Column(DOUBLE_PRECISION)
+    up_num = Column(INTEGER)
+    dowm_num = Column(INTEGER)
+    leader_name = Column(VARCHAR(50))
+    leader_per = Column(DOUBLE_PRECISION)
+
+    __table_args__ = (UniqueConstraint("date", "industry_code", name="cn_stock_industry_pk"),)

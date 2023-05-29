@@ -4,8 +4,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
 config = configparser.ConfigParser()
-# config.read("config.ini")
-config.read("D:\project\stock-backend\config.ini")
+config.read("config.ini")
+# config.read("D:\project\stock-backend\config.ini")
 
 username = config.get("database", "username")
 password = quote(config.get("database", "password"))
