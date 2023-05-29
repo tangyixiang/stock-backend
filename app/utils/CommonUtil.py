@@ -10,5 +10,5 @@ def is_openday():
     db = singleSession()
     db_max_date = db.query(func.max(CnStockData.date)).scalar().strftime("%Y-%m-%d")
     isopen = today == db_max_date
-    log.info(f"open day == f{isopen}")
+    log.info(f"open day == {isopen}")
     return isopen

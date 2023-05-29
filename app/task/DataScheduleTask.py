@@ -117,8 +117,8 @@ def three_index():
 @app.task(cron("42 15 * * 1-5"))
 def three_index():
     # 行业板块
-    # if is_openday() == False:
-    #     return
+    if is_openday() == False:
+        return
     today = datetime.now().strftime("%Y-%m-%d")
     df = ak.stock_board_industry_name_em()
     df.insert(loc=0, column="date", value=today)
