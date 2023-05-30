@@ -30,6 +30,11 @@ async def list_symbol(query: StockInfoQuery, db: Session = Depends(getSesion)):
     return {"total": total, "list": data}
 
 
+@router.get("/symbol/info")
+async def symbol_info(symbol: str, db: Session = Depends(getSesion)):
+    return db.query(CnStockInfo).where(CnStockInfo.symbol == symbol).one()
+
+
 @router.get("/symbol/history/data")
 async def symbol_history_data(symbol: str, period: int = 300, db: Session = Depends(getSesion)):
     data = db.query(CnStockData).where(CnStockData.symbol == symbol).order_by(CnStockData.date.desc()).limit(period).all()
