@@ -7,6 +7,7 @@ from operator import attrgetter
 from app.task.DataScheduleTask import *
 from app.model.CnStockQueryModel import *
 
+
 router = APIRouter(prefix="/cn")
 
 
@@ -61,8 +62,12 @@ async def vol_up(date: str, industry: str, db: Session = Depends(getSesion)):
     return {"total": len(df), "list": data_list}
 
 
-# @router.get("/test")
-# async def test():
-#     # all_symbol()
-#     # open_day_data()
-#     vol_up()
+@router.get("/analysis/vol")
+async def analysis_vol(date: str, vol_type: int, db: Session = Depends(getSesion)):
+    date_symbols = db.query(CNStockVolAnalysis).where(CNStockVolAnalysis.date == date).filter(CNStockVolAnalysis.vol_type == vol_type).order_by(CNStockVolAnalysis.trade_vol_pct.desc()).all()
+    data_list = []
+    for data in date_symbols:
+        temp_data = db.query(CnStockData).where(CnStockData.symbol == data.symbol).order_by(CnStockData.date.desc()).limit(100).all()
+        temp_data.sort(key=lambda x: x.date)
+        data_list.append({"symbol": data.symbol, "data": temp_data})
+    return data_list

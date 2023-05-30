@@ -94,3 +94,14 @@ class CnStockIndustry(Base):
     leader_per = Column(DOUBLE_PRECISION)
 
     __table_args__ = (UniqueConstraint("date", "industry_code", name="cn_stock_industry_pk"),)
+
+
+# cn_stock_vol_analysis
+class CNStockVolAnalysis(Base):
+    __tablename__ = "cn_stock_vol_analysis"
+
+    date = Column(DATE, primary_key=True)
+    symbol = Column(VARCHAR(10), primary_key=True)
+    vol_type = Column(INTEGER)
+    diff_per = Column(DOUBLE_PRECISION)
+    trade_vol_pct = Column(DOUBLE_PRECISION)

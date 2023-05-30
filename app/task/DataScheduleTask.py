@@ -115,7 +115,7 @@ def three_index():
 
 
 @app.task(cron("42 15 * * 1-5"))
-def three_index():
+def today_industry():
     # 行业板块
     if not is_openday():
         return
@@ -147,3 +147,30 @@ def three_index():
     df.to_sql(name="cn_stock_industry", con=engine.connect(), index=False, if_exists="append")
     log.info("行业板块同步完成")
 
+
+def filter_data(df: pd.DataFrame, date: str):
+    df["trade_vol_pct"] = df["trade_vol"].pct_change().round(2)
+    df = df[df["trade_vol_pct"] > 0.15]
+    df["date"] = df["date"].astype(str)
+    down_per = df[(df["diff_per"] < 0) & (df["date"] == date)].loc[:, ["date", "symbol", "diff_per", "trade_vol_pct"]].assign(vol_type=1)
+    up_per = df[(df["diff_per"] > 3.7) & (df["date"] == date)].loc[:, ["date", "symbol", "diff_per", "trade_vol_pct"]].assign(vol_type=2)
+    return down_per, up_per
+
+
+@app.task(cron("47 15 * * 1-5"))
+def three_index():
+    if not is_openday():
+        return
+    log.info("计算成交量")
+    db = singleSession()
+    all_symbol = db.query(CnStockInfo).all()
+    today = datetime.now().strftime("%Y-%m-%d")
+    for item in all_symbol:
+        log.info(f"{item.symbol}开始运行")
+        sql = f"select * from (select * from cn_stock_data where symbol = '{item.symbol}' order by date desc limit 50) t order by date asc"
+        df = pd.read_sql(sql, engine.connect())
+        down_per, up_per = filter_data(df, today)
+        down_per.to_sql(name="cn_stock_vol_analysis", con=engine.connect(), index=False, if_exists="append")
+        up_per.to_sql(name="cn_stock_vol_analysis", con=engine.connect(), index=False, if_exists="append")
+        log.info(f"{item.symbol}结束")
+    log.info("计算成交量完成")    

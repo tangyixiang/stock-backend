@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 
 
 class StockInfoQuery(BaseModel):
@@ -8,3 +8,7 @@ class StockInfoQuery(BaseModel):
     symbol: Optional[str]
     pageSize: int = 20
     pageNo: int = 1
+
+
+class StockSymbolListQuery(BaseModel):
+    symbol_list: List[str]
