@@ -158,7 +158,7 @@ def filter_data(df: pd.DataFrame, date: str):
 
 
 @app.task(cron("47 15 * * 1-5"))
-def three_index():
+def vol_calculate():
     if not is_openday():
         return
     log.info("计算成交量")
@@ -173,4 +173,4 @@ def three_index():
         down_per.to_sql(name="cn_stock_vol_analysis", con=engine.connect(), index=False, if_exists="append")
         up_per.to_sql(name="cn_stock_vol_analysis", con=engine.connect(), index=False, if_exists="append")
         log.info(f"{item.symbol}结束")
-    log.info("计算成交量完成")    
+    log.info("计算成交量完成")
