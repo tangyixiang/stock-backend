@@ -65,3 +65,4 @@ websocket-client==1.5.1
 websockets==11.0.3
 win32-setctime==1.1.0
 xlrd==2.0.1
+TA-Lib @ file:///D:/whl/TA_Lib-0.4.24-cp310-cp310-win_amd64.whl
